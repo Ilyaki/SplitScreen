@@ -46,7 +46,6 @@
     <Compile Include="ModEntry.cs" />
     <Compile Include="MouseTracker.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SplitInputState.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="manifest.json" />

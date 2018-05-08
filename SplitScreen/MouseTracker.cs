@@ -11,9 +11,6 @@ namespace SplitScreen
 {
 	public static class MouseTracker
 	{
-		/// <summary>
-		/// Struct representing a point.
-		/// </summary>
 		[StructLayout(LayoutKind.Sequential)]
 		public struct POINT
 		{
@@ -25,11 +22,7 @@ namespace SplitScreen
 				return new Point(point.X, point.Y);
 			}
 		}
-
-		/// <summary>
-		/// Retrieves the cursor's position, in screen coordinates.(relative to top left corner of screen: 0,0)
-		/// </summary>
-		/// <see>See MSDN documentation for further information.</see>
+		
 		[DllImport("user32.dll")]
 		public static extern bool GetCursorPos(out POINT lpPoint);
 
