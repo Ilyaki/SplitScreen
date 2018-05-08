@@ -9,6 +9,16 @@ using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
 
+
+/*BREAKDOWN OF MOD:
+ *	- Game1.game1.InactiveSleepTime = 0 : no fps throttling when window inactive
+ *	- Program.releaseBuild = false : prevents updateActiveMenu returning immidiately(also enables cheats etc unfortunately...)
+ *	- Every update tick, (SInputState)Game1.input.RealController is set to GamePad.GetState(). This prevents suppression when window inactive
+ *	- Every update tick, only if window is inactive, feed mouse X,Y from user32.dll into RealMouse of SInputState. (when window is inactive, Mouse.GetState() X,Y returns last recorded mouse X,Y before inactive)
+ *	- UpdateControlInput is called when it should according to SDV's Game1 if statement logic, except ONLY when InActive
+ *         >same with updateActiveMenu
+ */
+ 
 namespace SplitScreen
 {
 	public class ModEntry : StardewModdingAPI.Mod
@@ -26,7 +36,6 @@ namespace SplitScreen
 			//Manually update the RealController and RealMouse fields of SMAPI's SInputeState (which derives from SDV's InputState but is internal and sealed, so needs reflection)
 			StardewModdingAPI.Events.GameEvents.UpdateTick += (o, e) =>
 			{
-
 				#region Insert raw GamePadState/MouseState to SInputState
 				try
 				{
@@ -56,7 +65,7 @@ namespace SplitScreen
 				}
 				catch (ArgumentOutOfRangeException exception)
 				{
-					Console.WriteLine("Failed to set input: " + exception.Message);
+					Monitor.Log("Failed to set input: " + exception.Message, LogLevel.Error);
 				}
 				#endregion
 
@@ -76,6 +85,7 @@ namespace SplitScreen
 					&& Game1.globalFade
 					&& Game1.gameMode != 11
 					&& !Game1.game1.IsSaving
+					&& !Game1.game1.IsActive
 					//&&Game1._newDayTask == null (cant access due to protection level, but probably not necessary...?)
 					)
 				)
@@ -88,6 +98,7 @@ namespace SplitScreen
 					&& (Game1.gameMode == 2 || Game1.gameMode == 3) && (Game1.gameMode != 11)
 					&& Game1.currentLocation != null && Game1.currentMinigame == null
 					&& Game1.activeClickableMenu != null
+					&& !Game1.game1.IsActive
 					)
 				{
 					Game1.updateActiveMenu(Game1.currentGameTime);
