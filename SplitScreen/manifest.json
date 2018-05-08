@@ -1,0 +1,10 @@
+﻿{
+  "Name": "SplitScreen",
+  "Author": "Ilyaki",
+  "Version": "1.0.0",
+  "Description": "Allows split screen multiplayer",
+  "UniqueID": "Ilyaki.SplitScreen",
+  "EntryDll": "SplitScreen.dll",
+  "MinimumApiVersion": "2.6-beta",
+  "UpdateKeys": []
+}
