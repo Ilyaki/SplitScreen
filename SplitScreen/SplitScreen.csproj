@@ -45,6 +45,7 @@
     <Compile Include="AccessExtensions.cs" />
     <Compile Include="ModEntry.cs" />
     <Compile Include="MouseTracker.cs" />
+    <Compile Include="PlayerIndexController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
