@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
 using StardewValley;
@@ -19,27 +20,32 @@ using StardewValley.Menus;
  *         >same with updateActiveMenu
  */
 
+/*Loop works in this order:
+ * - SMAPI Updates itself, including polling the input
+ * - SMAPI calls Game1.Update
+ * - GameEvents.UpdateTick is called
+ * 
+ * If there is a window active, Game1.Update is called BEFORE we mod the input, so there is no effect.
+ * If inactive, we mod the input, then call UpdateControlInput
+	 */
+
 namespace SplitScreen
 {
 	public class ModEntry : Mod
 	{
-		private IModHelper smapiHelper;
-
 		private InputState sInputState;
-
-		private PlayerIndexController playerIndexController;
-
-		private bool hasShippingMenuCompleted = false;
 
 		private const int secondsBetweenWarnings = 5;
 
+		private bool hasShippingMenuCompleted = false;
+
+		private PlayerIndexController playerIndexController;
+				
 		public override void Entry(IModHelper helper)
 		{
-			this.smapiHelper = helper;
-
 			//Get player index if it is set in launch options, e.g. SMAPI.exe --log-path "third.txt" --player-index 3
-			playerIndexController = new PlayerIndexController(Monitor, Environment.GetCommandLineArgs());
-			
+			this.playerIndexController = new PlayerIndexController(Monitor, Environment.GetCommandLineArgs());
+
 			//Removes FPS throttle when window inactive
 			Game1.game1.InactiveSleepTime = new TimeSpan(0);
 
@@ -50,7 +56,7 @@ namespace SplitScreen
 			Program.releaseBuild = false;
 
 			//SMAPI sets Game1.input to an instance of SInputState
-			sInputState = (smapiHelper.Reflection.GetField<InputState>(typeof(Game1), "input", true)).GetValue();
+			sInputState = (Helper.Reflection.GetField<InputState>(typeof(Game1), "input", true)).GetValue();
 
 			//Manually update the RealController and RealMouse fields of SMAPI's SInputeState (which derives from SDV's InputState but is internal and sealed, so needs reflection)
 			//Also manually call Game1.UpdateControlInput
@@ -68,11 +74,10 @@ namespace SplitScreen
 				if(secondsPassed == 0)
 				{
 					/* playerIndex 1 should be active window */
-					if (Context.IsMultiplayer && playerIndexController.isPlayerIndexEqual(PlayerIndex.One) && !Game1.game1.IsActive)
+					if (Context.IsMultiplayer && playerIndexController.IsPlayerIndexEqual(PlayerIndex.One) && !Game1.game1.IsActive)
 						Game1.showGlobalMessage("Error: Controller index One's window must be active");
 					/*else if (Context.IsMultiplayer && Context.IsMainPlayer && !playerIndexController.isPlayerIndexEqual(PlayerIndex.One))
 						Game1.showGlobalMessage($"Error: Host must have controller index One (Currently is {playerIndexController.getIndexAsString()})"); (actually seems fine) */
-
 				}
 			};
 		}
@@ -81,7 +86,7 @@ namespace SplitScreen
 		{
 			/*From testing, it seems that between Saving (ie between SaveEvents.BeforeSave and SaveEvents.AfterSave), 
 			  GameEvents.UpdateTick is not called. SpecializedEvents.UnvalidatedUpdateTick is always called, however.
-			  For some (still unknown..) reason, ShippingMenu is unresponsive during save period when window is inactive
+			  For some reason, ShippingMenu is unresponsive during save period when window is inactive
 			  Workaround: Wait for host to finish the menu, then manually call the OK button (which closes the menu)*/
 			  
 			if (!hasShippingMenuCompleted && !Game1.game1.IsActive && Game1.activeClickableMenu != null && Game1.activeClickableMenu is ShippingMenu shippingMenu)
@@ -92,7 +97,7 @@ namespace SplitScreen
 					hasShippingMenuCompleted = true;
 					shippingMenu.InvokeMethod("okClicked");//Simulates menu close
 				}
-				//shippingMenu.update(Game1.currentGameTime); TODO: uncomment
+				//shippingMenu.update(Game1.currentGameTime); TODO: uncomment?
 			}
 		}
 
@@ -103,6 +108,8 @@ namespace SplitScreen
 			{
 				//If no playerIndex is set, a blank input state will be passed in
 				GamePadState rawGamePadState = playerIndexController.GetRawGamePadState();
+
+				//This only has effect when window is inactive, because otherwise , updateControlInput is called BEFORE this
 				sInputState.SetPrivatePropertyValue("RealController", rawGamePadState);
 				sInputState.SetPrivatePropertyValue("SuppressedController", rawGamePadState);
 
@@ -133,7 +140,7 @@ namespace SplitScreen
 				Monitor.Log("Failed to set input: " + exception.Message, LogLevel.Error);
 			}
 			#endregion
-
+			
 			#region Manually call UpdateControlInput
 			if (
 				(!Game1.game1.IsSaving 
@@ -151,6 +158,7 @@ namespace SplitScreen
 				&& Game1.gameMode != 11
 				&& !Game1.game1.IsSaving
 				&& !Game1.game1.IsActive
+				&& Game1.currentMinigame == null
 				//&&Game1._newDayTask == null (cant access due to protection level, but probably not necessary...?)
 				)
 			)
@@ -159,19 +167,31 @@ namespace SplitScreen
 			}
 			#endregion
 
-			/*Unnecessary as Program.releaseBuild = false will make SDV call this for us when the window is inactive!
-			#region Manually call UpdateActiveMenu
-			if (//Game1._newDayTask == null && 
-				!Game1.game1.IsSaving &&
-				 (Game1.gameMode == 2 || Game1.gameMode == 3) && (Game1.gameMode != 11)
-				&& Game1.currentLocation != null && Game1.currentMinigame == null
-				&& Game1.activeClickableMenu != null
-				&& !Game1.game1.IsActive
-				)
+			#region Manually update minigames
+			//Kill mouse otherwise it keeps moving when in minigame (which would interfere with the other players)
+			var cursorSpeed = Helper.Reflection.GetField<float>(typeof(Game1), "_cursorSpeed");
+			var cursorSpeedDirty = Helper.Reflection.GetField<bool>(typeof(Game1), "_cursorSpeedDirty");
+			if (Game1.currentMinigame != null)
 			{
-				Game1.updateActiveMenu(Game1.currentGameTime);
+				cursorSpeed.SetValue(0f);
+				cursorSpeedDirty.SetValue(false);
 			}
-			#endregion*/
+			else if (cursorSpeed.GetValue() == 0)//This happens once after leaving the minigame
+			{
+				cursorSpeedDirty.SetValue(true);
+			}
+
+			if (!Game1.fadeToBlack
+				&& Game1.currentMinigame != null
+				&& !Game1.HostPaused
+				&& (Game1.gameMode == 3 || Game1.gameMode == 2) && (Game1.gameMode != 11)
+				&& !Game1.game1.IsSaving
+				//&& Game1._newDayTask == null
+				&& !Game1.game1.IsActive )
+			{
+				MinigameUpdater.UpdateMinigameInput(Helper.Reflection, this.playerIndexController);
+			}
+			#endregion
 		}		
 	}
 }

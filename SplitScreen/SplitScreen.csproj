@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccessExtensions.cs" />
+    <Compile Include="MinigameUpdater.cs" />
     <Compile Include="ModEntry.cs" />
     <Compile Include="MouseTracker.cs" />
     <Compile Include="PlayerIndexController.cs" />

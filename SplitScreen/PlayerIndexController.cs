@@ -20,14 +20,14 @@ namespace SplitScreen
 			this.monitor = monitor;
 
 			playerIndex = GetPlayerIndexFromArgs(args);
-			monitor.Log($"Using player index {getIndexAsString()}", LogLevel.Info);
+			monitor.Log($"Using player index {GetIndexAsString()}", LogLevel.Info);
 		}
 
 		public GamePadState GetRawGamePadState() => playerIndex.HasValue ? GamePad.GetState(playerIndex.GetValueOrDefault()) : new GamePadState(new Vector2(), new Vector2(), 0, 0);
 		
-		public bool isPlayerIndexEqual(PlayerIndex playerIndex) => this.playerIndex.HasValue && this.playerIndex.Equals(playerIndex);
+		public bool IsPlayerIndexEqual(PlayerIndex playerIndex) => this.playerIndex.HasValue && this.playerIndex.Equals(playerIndex);
 
-		public string getIndexAsString() => playerIndex.HasValue ? playerIndex.ToString() : "NONE";
+		public string GetIndexAsString() => playerIndex.HasValue ? playerIndex.ToString() : "NONE";
 
 		private PlayerIndex? GetPlayerIndexFromArgs(string[] args)
 		{
