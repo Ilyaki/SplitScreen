@@ -22,6 +22,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,8 +33,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="0Harmony, Version=1.1.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Harmony.1.1.0\lib\net35\0Harmony.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -45,7 +50,9 @@
     <Compile Include="AccessExtensions.cs" />
     <Compile Include="MinigameUpdater.cs" />
     <Compile Include="ModEntry.cs" />
-    <Compile Include="MouseTracker.cs" />
+    <Compile Include="FakeMouse.cs" />
+    <Compile Include="Patchers\GetMousePatcher.cs" />
+    <Compile Include="Patchers\SetMousePatcher.cs" />
     <Compile Include="PlayerIndexController.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

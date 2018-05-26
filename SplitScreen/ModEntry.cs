@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Harmony;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SplitScreen.Patchers;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
@@ -14,10 +17,10 @@ using StardewValley.Menus;
 /*BREAKDOWN OF MOD:
  *	- Game1.game1.InactiveSleepTime = 0 : no fps throttling when window inactive
  *	- Program.releaseBuild = false : prevents updateActiveMenu returning immidiately(also enables cheats but haven't check what that means yet...)
- *	- Every update tick, (SInputState)Game1.input.RealController is set to GamePad.GetState(). This prevents suppression when window inactive
- *	- Every update tick, only if window is inactive, feed mouse X,Y from user32.dll into RealMouse of SInputState. (when window is inactive, Mouse.GetState() X,Y returns last recorded mouse X,Y before inactive)
+ *	- Every update tick, (SInputState)Game1.input.RealController is set to GamePad.GetState(). Mouse is set to whatever is in FakeMouse (unless window is focused) This prevents suppression when window inactive
  *	- UpdateControlInput is called when it should according to SDV's Game1 if statement logic, except ONLY when InActive
- *         >same with updateActiveMenu
+ *	- XNA.Framework.Mouse.SetPosition is overwritten to only update FAKE mouse when unfocused
+ *	- Game1.getMousePosition() is overwritten return FAKE mouse when unfocused
  */
 
 /*Loop works in this order:
@@ -36,8 +39,6 @@ namespace SplitScreen
 		private InputState sInputState;
 
 		private const int secondsBetweenWarnings = 5;
-
-		private bool hasShippingMenuCompleted = false;
 
 		private PlayerIndexController playerIndexController;
 				
@@ -62,42 +63,42 @@ namespace SplitScreen
 			//Also manually call Game1.UpdateControlInput
 			StardewModdingAPI.Events.GameEvents.UpdateTick += OnUpdateTick;
 
-			//Only used for manually closing Shipping Menu for non-Host players
+			//Used to update GamePad/Mouse when in shipping menu (before save)
 			StardewModdingAPI.Events.SpecialisedEvents.UnvalidatedUpdateTick += OnUnvalidatedUpdateTick;
-			StardewModdingAPI.Events.SaveEvents.AfterSave += (o, e) => { hasShippingMenuCompleted = false; };
 
-			//Used to send (Toaster notification) warnings periodically if windows are set up incorrectly
+			//Used to send warnings periodically if windows are set up incorrectly
 			int secondsPassed = 0;
 			StardewModdingAPI.Events.GameEvents.OneSecondTick += (o, e) =>
 			{
 				secondsPassed = ++secondsPassed % secondsBetweenWarnings;
 				if(secondsPassed == 0)
 				{
-					/* playerIndex 1 should be active window */
-					if (Context.IsMultiplayer && playerIndexController.IsPlayerIndexEqual(PlayerIndex.One) && !Game1.game1.IsActive)
-						Game1.showGlobalMessage("Error: Controller index One's window must be active");
-					/*else if (Context.IsMultiplayer && Context.IsMainPlayer && !playerIndexController.isPlayerIndexEqual(PlayerIndex.One))
-						Game1.showGlobalMessage($"Error: Host must have controller index One (Currently is {playerIndexController.getIndexAsString()})"); (actually seems fine) */
+					/* playerIndex 2/3/4 should NOT be active window. player 1 or none is fine */
+					if (Context.IsMultiplayer && Game1.game1.IsActive && 
+						( playerIndexController.IsPlayerIndexEqual(PlayerIndex.Two)
+							|| playerIndexController.IsPlayerIndexEqual(PlayerIndex.Three) 
+							|| playerIndexController.IsPlayerIndexEqual(PlayerIndex.Four)) )
+						Game1.showRedMessage("Error: This window must not be focused!");
 				}
 			};
+
+			//Patching Game1.getMousePosition() and Mouse.SetPosition(int x, int y) with Harmony
+			//This fixes bugs related to PC only having 1 mouse pointer
+			var harmony = HarmonyInstance.Create("me.ilyaki.splitscreen");
+			harmony.PatchAll(Assembly.GetExecutingAssembly());
 		}
 		
 		private void OnUnvalidatedUpdateTick (object sender, EventArgs e)
 		{
 			/*From testing, it seems that between Saving (ie between SaveEvents.BeforeSave and SaveEvents.AfterSave), 
-			  GameEvents.UpdateTick is not called. SpecializedEvents.UnvalidatedUpdateTick is always called, however.
-			  For some reason, ShippingMenu is unresponsive during save period when window is inactive
-			  Workaround: Wait for host to finish the menu, then manually call the OK button (which closes the menu)*/
+			  GameEvents.UpdateTick is not called (by SMAPI). SpecializedEvents.UnvalidatedUpdateTick is always called, however.
+			  ShippingMenu is unresponsive during save period when window is inactive
+			  Workaround: Update gamepad/mouse with UnvalidatedUpdateTick*/
 			  
-			if (!hasShippingMenuCompleted && !Game1.game1.IsActive && Game1.activeClickableMenu != null && Game1.activeClickableMenu is ShippingMenu shippingMenu)
+			if (!Game1.game1.IsActive && Game1.activeClickableMenu != null && Game1.activeClickableMenu is ShippingMenu shippingMenu)
 			{
-				if (Game1.player.team.GetNumberReady("wakeup") > 0)//This will equal 1 once host has finished with ShippingMenu
-				{
-					Monitor.Log("Manually closing ShippingMenu", LogLevel.Trace);
-					hasShippingMenuCompleted = true;
-					shippingMenu.InvokeMethod("okClicked");//Simulates menu close
-				}
-				//shippingMenu.update(Game1.currentGameTime); TODO: uncomment?
+				UpdateGamePadInput();
+				UpdateFakeMouseInput();
 			}
 		}
 
@@ -106,44 +107,20 @@ namespace SplitScreen
 			#region Insert raw GamePadState/MouseState to SInputState
 			try
 			{
-				//If no playerIndex is set, a blank input state will be passed in
-				GamePadState rawGamePadState = playerIndexController.GetRawGamePadState();
+				UpdateGamePadInput();
 
-				//This only has effect when window is inactive, because otherwise , updateControlInput is called BEFORE this
-				sInputState.SetPrivatePropertyValue("RealController", rawGamePadState);
-				sInputState.SetPrivatePropertyValue("SuppressedController", rawGamePadState);
-
-				#region Passing in MouseState
 				if (!Game1.game1.IsActive)//Otherwise breaks mouse input for active window
-				{
-					//Find mouse position relative to top left of window
-					Point windowTopLeftPosition = Game1.game1.Window.ClientBounds.Location;
-					Point mousePos = MouseTracker.GetCursorPosition();
-					Point relativeMousePos = new Point(mousePos.X - windowTopLeftPosition.X, mousePos.Y - windowTopLeftPosition.Y);
-
-					//Copy mouseState but change X and Y to that from Windows
-					MouseState rawMouseState = Mouse.GetState();
-					MouseState artificialMouseState = new MouseState(relativeMousePos.X, relativeMousePos.Y,
-						0, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
-
-					Point relativeMousePosWithZoom = new Point((int)(relativeMousePos.X * (1.0 / Game1.options.zoomLevel)), (int)(relativeMousePos.Y * (1.0 / Game1.options.zoomLevel)));
-
-
-					sInputState.SetPrivatePropertyValue("RealMouse", artificialMouseState);
-					sInputState.SetPrivatePropertyValue("MousePosition", relativeMousePosWithZoom);//These last 2 lines fixed jittery mouse when moving either sticks AND fixed jittery mouse in menus
-					sInputState.SetPrivatePropertyValue("SuppressedMouse", artificialMouseState);
-				}
-				#endregion
+					UpdateFakeMouseInput();
 			}
 			catch (ArgumentOutOfRangeException exception)
 			{
 				Monitor.Log("Failed to set input: " + exception.Message, LogLevel.Error);
 			}
 			#endregion
-			
+
 			#region Manually call UpdateControlInput
 			if (
-				(!Game1.game1.IsSaving 
+				(!Game1.game1.IsSaving
 				&& Game1.gameMode != 11 && (Game1.gameMode == 2 || Game1.gameMode == 3)
 				&& Game1.currentLocation != null
 				&& Game1.currentMinigame == null
@@ -192,6 +169,26 @@ namespace SplitScreen
 				MinigameUpdater.UpdateMinigameInput(Helper.Reflection, this.playerIndexController);
 			}
 			#endregion
-		}		
+		}	
+		
+		private void UpdateGamePadInput()
+		{
+			//If no playerIndex is set, a blank input state will be passed in
+			GamePadState rawGamePadState = playerIndexController.GetRawGamePadState();
+
+			//This only has effect when window is inactive, because otherwise , updateControlInput is called BEFORE this
+			sInputState.SetPrivatePropertyValue("RealController", rawGamePadState);
+			sInputState.SetPrivatePropertyValue("SuppressedController", rawGamePadState);
+		}
+
+		private void UpdateFakeMouseInput()
+		{
+			//Only call this when inactive
+			MouseState artificialMouseState = new MouseState(FakeMouse.X, FakeMouse.Y, 0, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
+
+			sInputState.SetPrivatePropertyValue("RealMouse", artificialMouseState);
+			sInputState.SetPrivatePropertyValue("MousePosition", FakeMouse.GetPoint());
+			sInputState.SetPrivatePropertyValue("SuppressedMouse", artificialMouseState);
+		}
 	}
 }
