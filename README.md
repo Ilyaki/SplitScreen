@@ -3,6 +3,8 @@ Stardew Valley mod that enables split screen multiplayer with multiple controlle
 
 Mod works by running multiple instances of StardewModdingAPI.exe, SplitScreen allows input to be received and used by inactive windows. Also creates "virtual" mouse for each instance
 
+Use with WindowResize mod to resize windows smaller: https://www.nexusmods.com/stardewvalley/mods/2266
+
 Breakdown of mod:
 - Game1.game1.InactiveSleepTime = 0 : no fps throttling when window inactive
 - Program.releaseBuild = false : prevents updateActiveMenu returning immidiately(also enables cheats but haven't check what that means yet...)
