@@ -17,7 +17,6 @@ namespace SplitScreen.Patchers
 	{
 		static bool Prefix()
 		{
-			//Console.WriteLine("GetMouse called!");
 			return false;
 		}
 
@@ -26,7 +25,7 @@ namespace SplitScreen.Patchers
 			if (Game1.game1.IsActive)
 				return new Point(Game1.getMouseX(), Game1.getMouseY());
 
-			return new Point(FakeMouse.X, FakeMouse.Y);
+			return new Point((int)(FakeMouse.X / Game1.options.zoomLevel), (int)(FakeMouse.Y / Game1.options.zoomLevel));
 		}
 	}
 }
