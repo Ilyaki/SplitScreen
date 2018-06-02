@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -8,6 +9,7 @@ using Harmony;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using RawInputSharp;
 using SplitScreen.Patchers;
 using StardewModdingAPI;
 using StardewValley;
@@ -21,6 +23,11 @@ using StardewValley.Menus;
  *	- UpdateControlInput is called when it should according to SDV's Game1 if statement logic, except ONLY when InActive
  *	- XNA.Framework.Mouse.SetPosition is overwritten to only update FAKE mouse when unfocused
  *	- Game1.getMousePosition() is overwritten return FAKE mouse when unfocused
+ *	- XNA.Framework.GamePad.GetState() is overwritten to prevent bug where Controll1 controls any focused window even if unassigned
+ *	
+ *	- SInputState.RealKeyboard is set to whatever is found from attached keyboard, using library: https://www.codeproject.com/Articles/17123/Using-Raw-Input-from-C-to-handle-multiple-keyboard
+ *	- Mouse is also rewritten by mouse obtained from a slightly modified (I removed a Console.WriteLine) RawInputSharp: http://jstookey.com/arcade/rawmouse/ 
+ *	- The OS mouse is locked in place by System.Windows.Forms.Cursor.Clip and an embedded autohotkey script (see MouseDisabler)
  */
 
 /*Loop works in this order:
@@ -30,22 +37,31 @@ using StardewValley.Menus;
  * 
  * If there is a window active, Game1.Update is called BEFORE we mod the input, so there is no effect.
  * If inactive, we mod the input, then call UpdateControlInput
-	 */
+ */
 
 namespace SplitScreen
 {
 	public class ModEntry : Mod
 	{
+		private ModConfig config;
+		private Keys menuKey;
+
 		private InputState sInputState;
 
-		private const int secondsBetweenWarnings = 5;
-
 		private PlayerIndexController playerIndexController;
-				
+		public static PlayerIndexController _playerIndexController;
+
+		private Keyboards.MultipleKeyboardManager kbManager;
+		private Mice.MultipleMiceManager miceManager;
+		
 		public override void Entry(IModHelper helper)
 		{
+			//Setup Montior
+			new SplitScreen.Monitor(Monitor);
+
 			//Get player index if it is set in launch options, e.g. SMAPI.exe --log-path "third.txt" --player-index 3
 			this.playerIndexController = new PlayerIndexController(Monitor, Environment.GetCommandLineArgs());
+			_playerIndexController = playerIndexController;
 
 			//Removes FPS throttle when window inactive
 			Game1.game1.InactiveSleepTime = new TimeSpan(0);
@@ -65,40 +81,43 @@ namespace SplitScreen
 
 			//Used to update GamePad/Mouse when in shipping menu (before save)
 			StardewModdingAPI.Events.SpecialisedEvents.UnvalidatedUpdateTick += OnUnvalidatedUpdateTick;
-
-			//Used to send warnings periodically if windows are set up incorrectly
-			int secondsPassed = 0;
-			StardewModdingAPI.Events.GameEvents.OneSecondTick += (o, e) =>
-			{
-				secondsPassed = ++secondsPassed % secondsBetweenWarnings;
-				if(secondsPassed == 0)
-				{
-					/* playerIndex 2/3/4 should NOT be active window. player 1 or none is fine */
-					if (Context.IsMultiplayer && Game1.game1.IsActive && 
-						( playerIndexController.IsPlayerIndexEqual(PlayerIndex.Two)
-							|| playerIndexController.IsPlayerIndexEqual(PlayerIndex.Three) 
-							|| playerIndexController.IsPlayerIndexEqual(PlayerIndex.Four)) )
-						Game1.showRedMessage("Error: This window must not be focused!");
-				}
-			};
-
+			
 			//Patching Game1.getMousePosition() and Mouse.SetPosition(int x, int y) with Harmony
 			//This fixes bugs related to PC only having 1 mouse pointer
 			var harmony = HarmonyInstance.Create("me.ilyaki.splitscreen");
 			harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+			//Keyboards/Mice Managers
+			kbManager = new Keyboards.MultipleKeyboardManager(harmony, sInputState);
+			StardewModdingAPI.Events.GameEvents.UpdateTick += kbManager.OnUpdate;
+			StardewModdingAPI.Events.SaveEvents.AfterReturnToTitle += kbManager.OnAfterReturnToTitle;
+			
+			miceManager = new Mice.MultipleMiceManager(playerIndexController);
+			//StardewModdingAPI.Events.GameEvents.UpdateTick += miceManager.OnUpdateTick;
+			StardewModdingAPI.Events.SpecialisedEvents.UnvalidatedUpdateTick += miceManager.OnUpdateTick;//Using Unvalidated lets player user mouse in ShippingMenu when unfocused
+			StardewModdingAPI.Events.SaveEvents.AfterLoad += miceManager.OnAfterLoad;
+			StardewModdingAPI.Events.SaveEvents.AfterReturnToTitle += miceManager.OnAfterReturnToTitle;
+
+			//Default CPU Affinity. Adjustments are handled by AffinityButtonMenu
+			AffinitySetter.SetDesignatedProcessor(1);
+
+			//Read the config
+			this.config = Helper.ReadConfig<ModConfig>();
+			if (!Enum.TryParse(this.config.MenuKey, out menuKey)) menuKey = Keys.N;
 		}
-		
+
 		private void OnUnvalidatedUpdateTick (object sender, EventArgs e)
 		{
 			/*From testing, it seems that between Saving (ie between SaveEvents.BeforeSave and SaveEvents.AfterSave), 
 			  GameEvents.UpdateTick is not called (by SMAPI). SpecializedEvents.UnvalidatedUpdateTick is always called, however.
 			  ShippingMenu is unresponsive during save period when window is inactive
 			  Workaround: Update gamepad/mouse with UnvalidatedUpdateTick*/
-			  
+
 			if (!Game1.game1.IsActive && Game1.activeClickableMenu != null && Game1.activeClickableMenu is ShippingMenu shippingMenu)
 			{
 				UpdateGamePadInput();
 				UpdateFakeMouseInput();
+				UpdateKeyboardInput();
 			}
 		}
 
@@ -108,9 +127,12 @@ namespace SplitScreen
 			try
 			{
 				UpdateGamePadInput();
-
+				
 				if (!Game1.game1.IsActive)//Otherwise breaks mouse input for active window
+				{
 					UpdateFakeMouseInput();
+					UpdateKeyboardInput();
+				}
 			}
 			catch (ArgumentOutOfRangeException exception)
 			{
@@ -169,6 +191,15 @@ namespace SplitScreen
 				MinigameUpdater.UpdateMinigameInput(Helper.Reflection, this.playerIndexController);
 			}
 			#endregion
+
+			#region Check for key to open SplitScreen menu
+			if (Keyboards.MultipleKeyboardManager.WasKeyJustPressed(menuKey))
+			{
+				var menu = new Menu.InputDeviceMenu(playerIndexController, kbManager, miceManager);
+				if (Game1.activeClickableMenu == null) Game1.activeClickableMenu = menu;
+			}
+			#endregion
+
 		}	
 		
 		private void UpdateGamePadInput()
@@ -180,15 +211,24 @@ namespace SplitScreen
 			sInputState.SetPrivatePropertyValue("RealController", rawGamePadState);
 			sInputState.SetPrivatePropertyValue("SuppressedController", rawGamePadState);
 		}
-
+		
 		private void UpdateFakeMouseInput()
 		{
 			//Only call this when inactive
-			MouseState artificialMouseState = new MouseState(FakeMouse.X, FakeMouse.Y, 0, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
+			MouseState artificialMouseState = Mice.MultipleMiceManager.GetAttachedMouseState() ?? new MouseState(FakeMouse.X, FakeMouse.Y, 0, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
 
 			sInputState.SetPrivatePropertyValue("RealMouse", artificialMouseState);
 			sInputState.SetPrivatePropertyValue("MousePosition", FakeMouse.GetPoint());
 			sInputState.SetPrivatePropertyValue("SuppressedMouse", artificialMouseState);
+		}
+
+		private void UpdateKeyboardInput()
+		{
+			//SMAPI doesn't update the keyboard input when unfocused, so do it here
+			KeyboardState keyboardState = Keyboards.MultipleKeyboardManager.GetAttachedKeyboardState() ?? new KeyboardState();
+
+			sInputState.SetPrivatePropertyValue("RealKeyboard", keyboardState);
+			//sInputState.SetPrivatePropertyValue("SuppressedKeyboard", keyboardState);//TODO: is this necessary?
 		}
 	}
 }

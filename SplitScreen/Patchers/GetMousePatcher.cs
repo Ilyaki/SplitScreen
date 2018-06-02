@@ -17,7 +17,6 @@ namespace SplitScreen.Patchers
 	{
 		static bool Prefix()
 		{
-			//Console.WriteLine("GetMouse called!");
 			return false;
 		}
 

@@ -9,11 +9,12 @@ using System.Threading.Tasks;
 
 namespace SplitScreen
 {
-	class PlayerIndexController
+	public class PlayerIndexController
 	{
 		private IMonitor monitor;
 
 		private PlayerIndex? playerIndex;
+		public PlayerIndex? _PlayerIndex => playerIndex;
 
 		public PlayerIndexController(IMonitor monitor, string[] args)
 		{
