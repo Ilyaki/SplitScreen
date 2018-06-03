@@ -91,6 +91,7 @@ namespace SplitScreen
 			kbManager = new Keyboards.MultipleKeyboardManager(harmony, sInputState);
 			StardewModdingAPI.Events.GameEvents.UpdateTick += kbManager.OnUpdate;
 			StardewModdingAPI.Events.SaveEvents.AfterReturnToTitle += kbManager.OnAfterReturnToTitle;
+			//StardewModdingAPI.Events.SaveEvents.AfterLoad += kbManager.OnAfterLoad;
 			
 			miceManager = new Mice.MultipleMiceManager(playerIndexController);
 			//StardewModdingAPI.Events.GameEvents.UpdateTick += miceManager.OnUpdateTick;
@@ -123,6 +124,9 @@ namespace SplitScreen
 
 		private void OnUpdateTick(object sender, EventArgs e)
 		{
+			//if (Game1.game1 != null && !Game1.game1.IsActive && sInputState != null)
+			//	sInputState.InvokeMethod("TrueUpdate");
+
 			#region Insert raw GamePadState/MouseState to SInputState
 			try
 			{
@@ -193,13 +197,14 @@ namespace SplitScreen
 			#endregion
 
 			#region Check for key to open SplitScreen menu
-			if (Keyboards.MultipleKeyboardManager.WasKeyJustPressed(menuKey))
+			if ((Game1.chatBox == null || !Game1.chatBox.isActive()) && Keyboards.MultipleKeyboardManager.WasKeyJustPressed(menuKey))
 			{
 				var menu = new Menu.InputDeviceMenu(playerIndexController, kbManager, miceManager);
 				if (Game1.activeClickableMenu == null) Game1.activeClickableMenu = menu;
 			}
 			#endregion
 
+			
 		}	
 		
 		private void UpdateGamePadInput()

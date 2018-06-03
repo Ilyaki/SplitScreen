@@ -39,7 +39,8 @@
     <Reference Include="AutoHotkey.Interop">
       <HintPath>..\..\..\..\..\DLLs\AutoHotkey.Interop.dll</HintPath>
     </Reference>
-    <Reference Include="RawInput">
+    <Reference Include="RawInput, Version=1.0.0.0, Culture=neutral, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\DLLs\RawInput.dll</HintPath>
     </Reference>
     <Reference Include="RawInputSharp, Version=1.0.6721.35323, Culture=neutral, processorArchitecture=MSIL">

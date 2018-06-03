@@ -36,10 +36,15 @@ namespace SplitScreen.Keyboards
 		/// </summary>
 		public void SetKeyState(int key, bool state) => SetKeyState(key, state ? 1 : 0);
 
+		public IEnumerable<Keys> GetPressedKeys()
+		{
+			return (keyStates.Where(x => x.Value == 1)).Select(x => (Keys)x.Key);
+		}
+
 		public KeyboardState GetKeyboardState()
 		{
 			if (cacheNeedsUpdating)
-				cachedState = new KeyboardState((keyStates.Where(x => x.Value == 1)).Select(x => (Keys)x.Key).ToArray());
+				cachedState = new KeyboardState(GetPressedKeys().ToArray());
 
 			cacheNeedsUpdating = false;
 			return cachedState;
