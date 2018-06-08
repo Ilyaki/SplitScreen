@@ -223,8 +223,12 @@ namespace SplitScreen
 			MouseState artificialMouseState = Mice.MultipleMiceManager.GetAttachedMouseState() ?? new MouseState(FakeMouse.X, FakeMouse.Y, 0, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
 
 			sInputState.SetPrivatePropertyValue("RealMouse", artificialMouseState);
-			sInputState.SetPrivatePropertyValue("MousePosition", FakeMouse.GetPoint());
 			sInputState.SetPrivatePropertyValue("SuppressedMouse", artificialMouseState);
+
+			Vector2 newFakeRawPixels = new Vector2((int)(FakeMouse.X * Game1.options.zoomLevel), (int)(FakeMouse.Y * Game1.options.zoomLevel));//Multiply by zoom level to undo transformation(whatever is set in FakeMouse has already taken account for zoom)
+			MethodInfo methodInfo = sInputState.GetType().GetMethod("GetCursorPosition", BindingFlags.NonPublic | BindingFlags.Instance);
+			object cursorPosition = methodInfo.Invoke(sInputState, new object[] { newFakeRawPixels });
+			sInputState.SetPrivateFieldValue("CursorPositionImpl", cursorPosition);
 		}
 
 		private void UpdateKeyboardInput()
