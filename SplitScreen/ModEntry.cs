@@ -59,9 +59,12 @@ namespace SplitScreen
 			//Setup Montior
 			new SplitScreen.Monitor(Monitor);
 
-			//Get player index if it is set in launch options, e.g. SMAPI.exe --log-path "third.txt" --player-index 3
+			//Get player index if it is set in launch options, e.g. StardewModdingAPI.exe --log-path "third.txt" --player-index 3
 			this.playerIndexController = new PlayerIndexController(Monitor, Environment.GetCommandLineArgs());
 			_playerIndexController = playerIndexController;
+
+			//This fixes StardewValley.Rumble rumbling the wrong controller
+			Game1.playerOneIndex = this.playerIndexController._PlayerIndex.GetValueOrDefault();
 
 			//Removes FPS throttle when window inactive
 			Game1.game1.InactiveSleepTime = new TimeSpan(0);
@@ -75,7 +78,7 @@ namespace SplitScreen
 			//SMAPI sets Game1.input to an instance of SInputState
 			sInputState = (Helper.Reflection.GetField<InputState>(typeof(Game1), "input", true)).GetValue();
 
-			//Manually update the RealController and RealMouse fields of SMAPI's SInputeState (which derives from SDV's InputState but is internal and sealed, so needs reflection)
+			//Manually update the RealController and RealMouse and RealKeyboard fields of SMAPI's SInputeState (which derives from SDV's InputState but is internal and sealed, so needs reflection)
 			//Also manually call Game1.UpdateControlInput
 			StardewModdingAPI.Events.GameEvents.UpdateTick += OnUpdateTick;
 
@@ -95,24 +98,24 @@ namespace SplitScreen
 			
 			miceManager = new Mice.MultipleMiceManager(playerIndexController);
 			//StardewModdingAPI.Events.GameEvents.UpdateTick += miceManager.OnUpdateTick;
-			StardewModdingAPI.Events.SpecialisedEvents.UnvalidatedUpdateTick += miceManager.OnUpdateTick;//Using Unvalidated lets player user mouse in ShippingMenu when unfocused
+			StardewModdingAPI.Events.SpecialisedEvents.UnvalidatedUpdateTick += miceManager.OnUpdateTick;//Using Unvalidated lets player use mouse in ShippingMenu when unfocused
 			StardewModdingAPI.Events.SaveEvents.AfterLoad += miceManager.OnAfterLoad;
 			StardewModdingAPI.Events.SaveEvents.AfterReturnToTitle += miceManager.OnAfterReturnToTitle;
 
 			//Default CPU Affinity. Adjustments are handled by AffinityButtonMenu
 			AffinitySetter.SetDesignatedProcessor(1);
 
-			//Read the config
+			//Load the config
 			this.config = Helper.ReadConfig<ModConfig>();
 			if (!Enum.TryParse(this.config.MenuKey, out menuKey)) menuKey = Keys.N;
 		}
 
 		private void OnUnvalidatedUpdateTick (object sender, EventArgs e)
 		{
-			/*From testing, it seems that between Saving (ie between SaveEvents.BeforeSave and SaveEvents.AfterSave), 
+			/*Between Saving (ie between SaveEvents.BeforeSave and SaveEvents.AfterSave), 
 			  GameEvents.UpdateTick is not called (by SMAPI). SpecializedEvents.UnvalidatedUpdateTick is always called, however.
 			  ShippingMenu is unresponsive during save period when window is inactive
-			  Workaround: Update gamepad/mouse with UnvalidatedUpdateTick*/
+			  Workaround: Update gamepad/mouse/keyboard with UnvalidatedUpdateTick*/
 
 			if (!Game1.game1.IsActive && Game1.activeClickableMenu != null && Game1.activeClickableMenu is ShippingMenu shippingMenu)
 			{
@@ -124,9 +127,6 @@ namespace SplitScreen
 
 		private void OnUpdateTick(object sender, EventArgs e)
 		{
-			//if (Game1.game1 != null && !Game1.game1.IsActive && sInputState != null)
-			//	sInputState.InvokeMethod("TrueUpdate");
-
 			#region Insert raw GamePadState/MouseState to SInputState
 			try
 			{
