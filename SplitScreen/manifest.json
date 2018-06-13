@@ -1,7 +1,7 @@
 ﻿{
   "Name": "SplitScreen",
   "Author": "Ilyaki",
-  "Version": "3.0.2",
+  "Version": "3.0.3",
   "Description": "Enables split screen multiplayer with multiple gamepads, keyboards or mice",
   "UniqueID": "Ilyaki.SplitScreen",
   "EntryDll": "SplitScreen.dll",
