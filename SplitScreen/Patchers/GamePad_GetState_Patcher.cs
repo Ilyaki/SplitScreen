@@ -13,14 +13,9 @@ namespace SplitScreen.Patchers
 
 	[HarmonyPatch(typeof(Microsoft.Xna.Framework.Input.GamePad))]
 	[HarmonyPatch("GetState")]
-	[HarmonyPatch(new Type[] { typeof(PlayerIndex)})]
+	[HarmonyPatch(new Type[] { typeof(PlayerIndex), typeof(GamePadDeadZone)})]//The GetState(PlayerIndex playerIndex) calls this method, so only need to edit one method
 	class GamePad_GetState_Patcher
 	{
-		public static bool Prefix()
-		{
-			return true;
-		}
-
 		public static GamePadState Postfix(GamePadState g, PlayerIndex playerIndex, GamePadState __result)
 		{
 			if (playerIndex.Equals(PlayerIndex.One) && !ModEntry._playerIndexController.IsPlayerIndexEqual(PlayerIndex.One))
