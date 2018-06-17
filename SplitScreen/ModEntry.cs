@@ -102,8 +102,16 @@ namespace SplitScreen
 			StardewModdingAPI.Events.SaveEvents.AfterLoad += miceManager.OnAfterLoad;
 			StardewModdingAPI.Events.SaveEvents.AfterReturnToTitle += miceManager.OnAfterReturnToTitle;
 
-			//Default CPU Affinity. Adjustments are handled by AffinityButtonMenu
-			AffinitySetter.SetDesignatedProcessor(1);
+			//Set the affinity for all SMAPI processes. Adjustments are handled by AffinityButtonMenu
+			var processes = Process.GetProcessesByName(Process.GetCurrentProcess().ProcessName);
+			int processorCount = Environment.ProcessorCount;
+			for (int i = 0; i < processes.Count(); i++)
+			{
+				int designatedCPU = i % processorCount;
+				designatedCPU = processorCount - designatedCPU - 1;//Start backwards (Use the last core for the first instance)
+				try { processes[i].ProcessorAffinity = (IntPtr)(1 << designatedCPU); }
+				catch (Exception e) { Monitor.Log($"Could not set affinity for {i}: {e.ToString()}", LogLevel.Debug); }
+			}
 
 			//Load the config
 			this.config = Helper.ReadConfig<ModConfig>();

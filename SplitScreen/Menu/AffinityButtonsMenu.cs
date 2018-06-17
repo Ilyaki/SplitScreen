@@ -3,6 +3,10 @@ using StardewValley.Menus;
 using System;
 using Microsoft.Xna.Framework;
 using StardewValley;
+using System;
+using System.Diagnostics;
+using System.Linq;
+
 
 namespace SplitScreen.Menu
 {
@@ -14,7 +18,7 @@ namespace SplitScreen.Menu
 		int x, y;
 
 		private readonly int processorCount;
-		private static int currentSelectedProcessor = 1;//NOT zero based
+		private static int currentSelectedProcessor = 1 + (int)Math.Log((int)Process.GetCurrentProcess().ProcessorAffinity, 2);//NOT zero based
 		private static int CurrentSelectedProcessor
 		{
 			get => currentSelectedProcessor;
