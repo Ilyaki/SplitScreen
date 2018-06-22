@@ -224,7 +224,8 @@ namespace SplitScreen
 			sInputState.SetPrivatePropertyValue("RealController", rawGamePadState);
 			sInputState.SetPrivatePropertyValue("SuppressedController", rawGamePadState);
 		}
-		
+
+		private MouseState fakeMouseState = new MouseState();
 		private void UpdateFakeMouseInput()
 		{
 			//Only call this when inactive
@@ -232,10 +233,14 @@ namespace SplitScreen
 
 			sInputState.SetPrivatePropertyValue("RealMouse", artificialMouseState);
 			sInputState.SetPrivatePropertyValue("SuppressedMouse", artificialMouseState);
-
-			Vector2 newFakeRawPixels = new Vector2((int)(FakeMouse.X * Game1.options.zoomLevel), (int)(FakeMouse.Y * Game1.options.zoomLevel));//Multiply by zoom level to undo transformation(whatever is set in FakeMouse has already taken account for zoom)
+			
+			//sInputState.SetPrivatePropertyValue("MousePosition", FakeMouse.GetPoint()); NO LONGER WORKS. this is simpler:
+			Vector2 zoomedPixels = new Vector2((int)FakeMouse.X, (int)FakeMouse.Y);
+			Vector2 newFakeRawPixels = zoomedPixels * Game1.options.zoomLevel;//Multiply by zoom level to undo transformation(whatever is set in FakeMouse has already taken account for zoom)
+			fakeMouseState.SetPrivateFieldValue("x", FakeMouse.X);
+			fakeMouseState.SetPrivateFieldValue("y", FakeMouse.Y);
 			MethodInfo methodInfo = sInputState.GetType().GetMethod("GetCursorPosition", BindingFlags.NonPublic | BindingFlags.Instance);
-			object cursorPosition = methodInfo.Invoke(sInputState, new object[] { newFakeRawPixels });
+			object cursorPosition = methodInfo.Invoke(sInputState, new object[] { fakeMouseState, newFakeRawPixels });
 			sInputState.SetPrivateFieldValue("CursorPositionImpl", cursorPosition);
 		}
 
