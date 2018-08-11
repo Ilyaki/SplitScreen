@@ -1,31 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Microsoft.Xna.Framework;
-using Harmony;
+﻿using Harmony;
 using StardewValley;
 
 namespace SplitScreen.Patchers
 {
-	//Game1 : public static Point getMousePosition()
-	[HarmonyPatch(typeof(Game1))]
-	[HarmonyPatch("getMousePosition")]
-	class GetMousePatcher
+	/*[HarmonyPatch(typeof(Game1))]
+	[HarmonyPatch("getMouseX")]
+	class GetMousePatcher_getMouseX
 	{
-		static bool Prefix()
+		static int Postfix(int i, int __result)
 		{
-			return false;
-		}
-
-		static Point Postfix(Point p)
-		{
-			if (Game1.game1.IsActive)
-				return new Point(Game1.getMouseX(), Game1.getMouseY());
-
-			return new Point((int)(FakeMouse.X / Game1.options.zoomLevel), (int)(FakeMouse.Y / Game1.options.zoomLevel));
+			return (!Utils.TrueIsWindowActive() && PlayerIndexController._PlayerIndex != null) ? (int)(FakeMouse.X / Game1.options.zoomLevel) : __result;
 		}
 	}
+
+	[HarmonyPatch(typeof(Game1))]
+	[HarmonyPatch("getMouseY")]
+	class GetMousePatcher_getMouseY
+	{
+		static int Postfix(int i, int __result)
+		{
+			return (!Utils.TrueIsWindowActive() && PlayerIndexController._PlayerIndex != null) ? (int)(FakeMouse.Y / Game1.options.zoomLevel) : __result;
+		}
+	}*/
 }

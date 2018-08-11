@@ -2,33 +2,20 @@
 using Microsoft.Xna.Framework.Input;
 using StardewModdingAPI;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SplitScreen
 {
 	public class PlayerIndexController
 	{
-		private IMonitor monitor;
+		private static PlayerIndex? playerIndex;
+		public static PlayerIndex? _PlayerIndex => playerIndex;
 
-		private PlayerIndex? playerIndex;
-		public PlayerIndex? _PlayerIndex => playerIndex;
-
-		public PlayerIndexController(IMonitor monitor, string[] args)
+		public PlayerIndexController(string[] args)
 		{
-			this.monitor = monitor;
-
 			playerIndex = GetPlayerIndexFromArgs(args);
-			monitor.Log($"Using player index {GetIndexAsString()}", LogLevel.Info);
+			Monitor.Log($"Using player index {GetIndexAsString()}", LogLevel.Info);
 		}
-
-		public GamePadState GetRawGamePadState() => playerIndex.HasValue ? GamePad.GetState(playerIndex.GetValueOrDefault()) : new GamePadState(new Vector2(), new Vector2(), 0, 0);
-		
-		public bool IsPlayerIndexEqual(PlayerIndex playerIndex) => this.playerIndex.HasValue && this.playerIndex.Equals(playerIndex);
-
-		public string GetIndexAsString() => playerIndex.HasValue ? playerIndex.ToString() : "NONE";
 
 		private PlayerIndex? GetPlayerIndexFromArgs(string[] args)
 		{
@@ -62,17 +49,21 @@ namespace SplitScreen
 						case "fourth":
 							return PlayerIndex.Four;
 						default:
-							monitor.Log("'--player-index' launch option set incorrectly", LogLevel.Error);
+							Monitor.Log("'--player-index' launch option set incorrectly", LogLevel.Error);
 							return null;
 					}
 				}
 				else
 				{
-					monitor.Log("'--player-index' launch option set incorrectly", LogLevel.Error);
+					Monitor.Log("'--player-index' launch option set incorrectly", LogLevel.Error);
 				}
 			}
 
 			return PlayerIndex.One;
 		}
+
+		public static GamePadState GetRawGamePadState() => playerIndex.HasValue ? GamePad.GetState(playerIndex.GetValueOrDefault()) : new GamePadState(new Vector2(), new Vector2(), 0, 0);
+		
+		public static string GetIndexAsString() => playerIndex.HasValue ? playerIndex.ToString() : "NONE";
 	}
 }

@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using AutoHotkey.Interop;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-
-using AutoHotkey.Interop;
 
 namespace SplitScreen.Mice
 {
@@ -27,9 +21,9 @@ namespace SplitScreen.Mice
 		static extern int ShowCursor(bool bShow);
 		#endregion
 
-		public MouseDisabler(PlayerIndexController playerIndexController)
+		public MouseDisabler()
 		{
-			if (playerIndexController._PlayerIndex == null)
+			if (PlayerIndexController._PlayerIndex == null)
 				try
 				{
 					ahk = new AutoHotkeyEngine();

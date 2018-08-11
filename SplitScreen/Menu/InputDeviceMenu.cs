@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using StardewValley;
 using StardewValley.Menus;
@@ -12,7 +7,6 @@ namespace SplitScreen.Menu
 {
 	class InputDeviceMenu : IClickableMenu
 	{
-		PlayerIndexController playerIndexController;
 		Keyboards.MultipleKeyboardManager keyboardManager;
 		Mice.MultipleMiceManager miceManager;
 
@@ -35,9 +29,8 @@ namespace SplitScreen.Menu
 
 		ToggleBordersButton toggleBordersButton;
 
-		public InputDeviceMenu(PlayerIndexController playerIndexController, Keyboards.MultipleKeyboardManager keyboardManager, Mice.MultipleMiceManager miceManager)
+		public InputDeviceMenu(Keyboards.MultipleKeyboardManager keyboardManager, Mice.MultipleMiceManager miceManager)
 		{
-			this.playerIndexController = playerIndexController;
 			this.keyboardManager = keyboardManager;
 			this.miceManager = miceManager;
 
@@ -90,7 +83,7 @@ namespace SplitScreen.Menu
 				base.xPositionOnScreen, base.yPositionOnScreen, base.width, base.height, Color.White, 4f, true);
 
 			//Top texts
-			spriteBatch.DrawString(textFont, $"Gamepad player index: {playerIndexController.GetIndexAsString()}", playerIndexTextPosition, Game1.textColor);
+			spriteBatch.DrawString(textFont, $"Gamepad player index: {PlayerIndexController.GetIndexAsString()}", playerIndexTextPosition, Game1.textColor);
 			spriteBatch.DrawString(textFont, $"Attached keyboard: { Keyboards.MultipleKeyboardManager.AttachedKeyboardID }", keyboardPointerTextPosition, Game1.textColor);
 			spriteBatch.DrawString(textFont, $"Attached mouse: { Mice.MultipleMiceManager.AttachedMouseID }", mousePointerTextPosition, Game1.textColor);
 
@@ -150,10 +143,10 @@ namespace SplitScreen.Menu
 
 		public override void update(GameTime time)
 		{
-			attachMouseButton.IsDisabled = playerIndexController._PlayerIndex != null || !Keyboards.MultipleKeyboardManager.HasAttachedKeyboard();
-			detachMouseButton.IsDisabled = playerIndexController._PlayerIndex != null || !Mice.MultipleMiceManager.HasAttachedMouse();
+			attachMouseButton.IsDisabled = PlayerIndexController._PlayerIndex != null || !Keyboards.MultipleKeyboardManager.HasAttachedKeyboard();
+			detachMouseButton.IsDisabled = PlayerIndexController._PlayerIndex != null || !Mice.MultipleMiceManager.HasAttachedMouse();
 
-			detachKeyboardButton.IsDisabled = playerIndexController._PlayerIndex != null || !Keyboards.MultipleKeyboardManager.HasAttachedKeyboard() || (Mice.MultipleMiceManager.HasAttachedMouse() && !Game1.game1.IsActive);
+			detachKeyboardButton.IsDisabled = PlayerIndexController._PlayerIndex != null || !Keyboards.MultipleKeyboardManager.HasAttachedKeyboard() || (Mice.MultipleMiceManager.HasAttachedMouse() && !Game1.game1.IsActive);
 
 			
 			attachKeyboardButton.Update();

@@ -1,10 +1,10 @@
 ﻿{
   "Name": "SplitScreen",
   "Author": "Ilyaki",
-  "Version": "3.0.5",
+  "Version": "4.0.0-beta",
   "Description": "Enables split screen multiplayer with multiple gamepads, keyboards or mice",
   "UniqueID": "Ilyaki.SplitScreen",
   "EntryDll": "SplitScreen.dll",
-  "MinimumApiVersion": "2.6-beta.17",
+  "MinimumApiVersion": "2.6",
   "UpdateKeys": [ "GitHub:Ilyaki/SplitScreen", "Nexus:2139" ]
 }

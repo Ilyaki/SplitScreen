@@ -1,11 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SplitScreen.Menu
+﻿namespace SplitScreen.Menu
 {
 	class AttachKeyboardButton : BaseTextButton
 	{
@@ -17,7 +10,7 @@ namespace SplitScreen.Menu
 		{
 			this.keyboardManager = keyboardManager;
 
-			base.isDisabled = ModEntry._playerIndexController._PlayerIndex != null;
+			base.isDisabled = PlayerIndexController._PlayerIndex != null;
 		}
 
 		public override void OnClicked()
