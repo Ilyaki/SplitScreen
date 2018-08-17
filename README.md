@@ -5,6 +5,9 @@ Mod works by running multiple instances of StardewModdingAPI.exe, SplitScreen al
 
 Use with WindowResize mod to resize windows smaller: https://www.nexusmods.com/stardewvalley/mods/2266
 
+
+(All these overwrites are made with https://github.com/pardeike/Harmony)
+
 BREAKDOWN OF MOD:
  * Game1.game1.InactiveSleepTime = 0 : no fps throttling when window inactive
  * XNA Keyboard/GamePad/Mouse.GetState is overwritten to pass only one device in
