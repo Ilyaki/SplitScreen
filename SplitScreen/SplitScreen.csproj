@@ -81,7 +81,6 @@
     <Compile Include="ModEntry.cs" />
     <Compile Include="FakeMouse.cs" />
     <Compile Include="Patchers\GamePad_GetState_Patcher.cs" />
-    <Compile Include="Patchers\GetMousePatcher.cs" />
     <Compile Include="Patchers\Keyboard_GetState_Patcher.cs" />
     <Compile Include="Patchers\Mouse_GetState_Patcher.cs" />
     <Compile Include="Patchers\SetMousePatcher.cs" />

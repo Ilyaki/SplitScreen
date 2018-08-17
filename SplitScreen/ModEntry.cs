@@ -10,18 +10,13 @@ using System.Reflection;
 
 /*BREAKDOWN OF MOD:
  *	- Game1.game1.InactiveSleepTime = 0 : no fps throttling when window inactive
- *	- Game1.getMouseX or Y is overwritten return FAKE mouse when unfocused
- *	- XNA.Framework.Keyboard/GamePad/Mouse.GetState is overwritten to pass only one device in
+ *	
+ *	- XNA Keyboard/GamePad/Mouse.GetState is overwritten to pass only one device in
+ *	- XNA SetMouse is also overwritten to set a fake mouse (Stardew Valley sets the mouse when using a gamepad to mimick the mouse cursor moving)
  *	
  *	- Raw input for keyboard is determined using library: https://www.codeproject.com/Articles/17123/Using-Raw-Input-from-C-to-handle-multiple-keyboard
  *	- Mouse is also overwritten by mouse obtained from a slightly modified (I removed a Console.WriteLine) RawInputSharp: http://jstookey.com/arcade/rawmouse/ 
  *	- The OS mouse is locked in place by System.Windows.Forms.Cursor.Clip and an embedded autohotkey script (see MouseDisabler)
- */
-
-/*Loop works in this order:
- * - SMAPI Updates itself, including polling the input
- * - SMAPI calls Game1.Update
- * - GameEvents.UpdateTick is called
  */
 
 namespace SplitScreen
