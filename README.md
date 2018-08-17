@@ -1,18 +1,17 @@
 # SplitScreen
 Stardew Valley mod that enables split screen multiplayer with multiple controllers, keyboards or mice.
 
-Mod works by running multiple instances of StardewModdingAPI.exe, SplitScreen allows input to be received and used by inactive windows. Also creates "virtual" mouse for each instance
+Mod works by running multiple instances of StardewModdingAPI.exe, SplitScreen allows input to be received and used by inactive windows. Also creates "virtual/fake" mouse for each instance
 
 Use with WindowResize mod to resize windows smaller: https://www.nexusmods.com/stardewvalley/mods/2266
 
+
+(All these overwrites are made with https://github.com/pardeike/Harmony)
+
 BREAKDOWN OF MOD:
  * Game1.game1.InactiveSleepTime = 0 : no fps throttling when window inactive
- *	Program.releaseBuild = false : prevents updateActiveMenu returning immidiately(also enables cheats but haven't check what that means yet...)
- * Every update tick, (SInputState)Game1.input.RealController is set to GamePad.GetState(). Mouse is set to whatever is in FakeMouse (unless window is focused) This prevents suppression when window inactive
- * UpdateControlInput is called when it should according to SDV's Game1 if statement logic, except ONLY when InActive
- * XNA.Framework.Mouse.SetPosition is overwritten to only update FAKE mouse when unfocused
- * Game1.getMousePosition() is overwritten return FAKE mouse when unfocused
- * XNA.Framework.GamePad.GetState() is overwritten to prevent bug where Controll1 controls any focused window even if unassigned
- * SInputState.RealKeyboard is set to whatever is found from attached keyboard, using library: https://www.codeproject.com/Articles/17123/Using-Raw-Input-from-C-to-handle-multiple-keyboard
- * Mouse is also rewritten by mouse obtained from a slightly modified (I removed a Console.WriteLine) RawInputSharp: http://jstookey.com/arcade/rawmouse/ 
+ * XNA Keyboard/GamePad/Mouse.GetState is overwritten to pass only one device in
+ * XNA SetMouse is also overwritten to set a fake mouse (Stardew Valley sets the mouse when using a gamepad to mimick the mouse cursor moving)
+ * Raw input for keyboard is determined using library: https://www.codeproject.com/Articles/17123/Using-Raw-Input-from-C-to-handle-multiple-keyboard
+ * Mouse is also overwritten by mouse obtained from a slightly modified (I removed a Console.WriteLine) RawInputSharp: http://jstookey.com/arcade/rawmouse/ 
  * The OS mouse is locked in place by System.Windows.Forms.Cursor.Clip and an embedded autohotkey script (see MouseDisabler)

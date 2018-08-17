@@ -1,11 +1,9 @@
-﻿using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using StardewValley;
 using StardewValley.Menus;
 using System;
-using Microsoft.Xna.Framework;
-using StardewValley;
-using System;
 using System.Diagnostics;
-using System.Linq;
 
 
 namespace SplitScreen.Menu

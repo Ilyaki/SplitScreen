@@ -1,15 +1,10 @@
-﻿using System;
+﻿using Harmony;
+using Microsoft.Xna.Framework.Input;
+using RawInput_dll;
+using StardewValley;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using StardewValley;
-using RawInput_dll;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Input;
-using Harmony;
-using System.Reflection;
 
 namespace SplitScreen.Keyboards
 {
@@ -33,7 +28,7 @@ namespace SplitScreen.Keyboards
 
 		private static KeyboardState? oldAttachedKeyboardState;
 
-		public MultipleKeyboardManager(HarmonyInstance harmony, InputState SInputState)
+		public MultipleKeyboardManager(HarmonyInstance harmony)
 		{
 			RawInput rawinput = new RawInput(Game1.game1.Window.Handle, false);
 			rawinput.KeyPressed += OnKeyPressed;

@@ -1,15 +1,9 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using RawInputSharp;
-using SplitScreen.Keyboards;
-using SplitScreen.Patchers;
 using StardewValley;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SplitScreen.Mice
 {
@@ -37,9 +31,9 @@ namespace SplitScreen.Mice
 		//Vector2 is total delta
 		private static List<RawMouse> mice = new List<RawMouse>();
 
-		public MultipleMiceManager(PlayerIndexController playerIndexController)
+		public MultipleMiceManager()
 		{
-			mouseDisabler = new MouseDisabler(playerIndexController);
+			mouseDisabler = new MouseDisabler();
 
 			RegisterMice();
 		}
@@ -71,7 +65,6 @@ namespace SplitScreen.Mice
 		#endregion
 
 		#region SMAPI events
-		public void OnAfterLoad(object sender, EventArgs e) { }
 		
 		public void OnUpdateTick(object sender, EventArgs e)
 		{

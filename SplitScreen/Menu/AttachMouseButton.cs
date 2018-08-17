@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using StardewModdingAPI;
+﻿using StardewModdingAPI;
 
 namespace SplitScreen.Menu
 {
@@ -15,7 +10,7 @@ namespace SplitScreen.Menu
 		{
 			this.miceManager = miceManager;
 
-			base.isDisabled = ModEntry._playerIndexController._PlayerIndex != null;
+			base.isDisabled = PlayerIndexController._PlayerIndex != null;
 		}
 
 		public override void OnClicked()
