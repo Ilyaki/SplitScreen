@@ -38,7 +38,10 @@ namespace SplitScreen
 
 			//Get player index if it is set in launch options, e.g. StardewModdingAPI.exe --log-path "third.txt" --player-index 3
 			this.playerIndexController = new PlayerIndexController(Environment.GetCommandLineArgs());
-			
+
+			//Stardew Valley uses this as the target controller for rumble(and nothing else it seems)
+			Game1.playerOneIndex = PlayerIndexController._PlayerIndex.GetValueOrDefault();
+
 			//Removes FPS throttle when window inactive
 			Game1.game1.InactiveSleepTime = new TimeSpan(0);
 			
