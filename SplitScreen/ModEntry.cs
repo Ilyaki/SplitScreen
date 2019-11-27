@@ -62,7 +62,7 @@ namespace SplitScreen
 			
 			miceManager = new Mice.MultipleMiceManager();
 
-			Helper.Events.Specialised.UnvalidatedUpdateTicked += miceManager.OnUpdateTick;
+			Helper.Events.Specialized.UnvalidatedUpdateTicked += miceManager.OnUpdateTick;
 			Helper.Events.GameLoop.ReturnedToTitle += miceManager.OnAfterReturnToTitle;
 
 			//Set the affinity for all SMAPI processes. Adjustments are handled by AffinityButtonMenu
